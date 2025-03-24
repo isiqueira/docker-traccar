@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  db:
+    container_name: mysql
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_pwd
+      - MYSQL_USER=traccar
+      - MYSQL_PASSWORD=traccar
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./.docker/db/mysql:/var/lib/mysql
+      - ./.docker/db/mysql/script/mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    links:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    restart: always
+    ports:
+      - 8081:80
+  traccar:
+    container_name: traccar
+    hostname: traccar
+    restart: unless-stopped
+    ports:
+        - 80:8082
+        - 5000-5150:5000-5150
+        - 5000-5150:5000-5150/udp
+    volumes:
+        - ./.docker/traccar/logs:/opt/traccar/logs:rw
+        - ./.docker/traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+        - ./.docker/traccar/data:/opt/traccar/data:rw
+    image: traccar/traccar:latest
+    depends_on:
+      - db
